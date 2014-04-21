@@ -35,6 +35,16 @@ void setup()  {
   Serial.println("Current Node: " + String(curNodeX) + "," + String(curNodeY));
   Serial.println("Wall information: " + String(node[curNodeY][curNodeX].walls));
   for(int i=0; i<mapSize; i++) {
+      for(int j=0; j<mapSize; j++) {
+        if(i==curNodeY && j==curNodeX) {
+          Serial.print("X  ");
+        }
+        else
+          Serial.print(String(node[i][j].cost) + "  ");
+      }
+      Serial.println();
+    }
+  for(int i=0; i<mapSize; i++) {
     for(int j=0; j<mapSize; j++){
       Serial.print(String(node[i][j].walls) + "  ");  
     }
@@ -58,7 +68,7 @@ void testBench() {
   node[2][1].walls = 10; 
   node[2][2].walls = 10;
   node[2][3].walls = 9;
-  node[2][4].walls = 3;
+  node[2][4].walls = 7;
   node[3][0].walls = 8;
   node[3][1].walls = 0; 
   node[3][2].walls = 2;
@@ -68,7 +78,7 @@ void testBench() {
   node[4][1].walls = 13; 
   node[4][2].walls = 12;
   node[4][3].walls = 4;
-  node[4][4].walls = 4;
+  node[4][4].walls = 6;
 }
 
 // the loop routine runs over and over again forever:
@@ -85,6 +95,7 @@ void loop()  {
     
     if(!node[curNodeY][curNodeX].visited){
 //      node[curNodeY][curNodeX].walls=getWalls();
+      updateCosts();
       getNextDirection();
       node[curNodeY][curNodeX].visited = true;
     }
@@ -107,7 +118,7 @@ void loop()  {
     }
     delay(timeDelay);
   } 
-  Serial.println("TARGET FOUND!!!!");
+//  Serial.println("TARGET FOUND!!!!");
 }
 
 void addDist(int dist){
@@ -132,6 +143,47 @@ byte getWalls() {
   Serial.println("Exiting getWalls()");
   Serial.println();
   return 00000000;
+}
+
+void updateCosts() {
+  Serial.println("Entering updateCosts()");
+  boolean check = true;
+  while(check) {
+    check = false;
+    for(int i=0; i<mapSize; i++) {
+      for(int j=0; j<mapSize; j++) {
+        int neighbors[4] = {-1,-1,-1,-1};
+        int tempCost = mapSize*mapSize;
+        byte walls = node[i][j].walls;
+        if(!bitRead(walls,0) && i-1 >= 0){
+          neighbors[0] = node[i-1][j].cost;    
+        }
+        if(!bitRead(walls,1) && j+1 < mapSize) {
+          neighbors[1] = node[i][j+1].cost;
+        }
+        if(!bitRead(walls,2) && i+1 < mapSize) {
+          neighbors[2] = node[i+1][j].cost;
+        }
+        if(!bitRead(walls,3) && j-1 >= 0) {
+          neighbors[3] = node[i][j-1].cost;
+        }
+        for(int k=0; k<4; k++) {
+          if(neighbors[k] < tempCost && neighbors[k] != -1) {
+            tempCost = neighbors[k];
+          }       
+        }
+//        Serial.println("Neighbors for " + String(i) + "," + String(j) + " :" + String(neighbors[0]) + "," + String(neighbors[1]) + "," + String(neighbors[2]) + "," + String(neighbors[3]));
+//        tempCost = min(min(neighbors[0], neighbors[1]), min(neighbors[2], neighbors[3]));
+//        Serial.println("Temp Cost is : " + String(tempCost));
+        if(tempCost > node[i][j].cost && tempCost != mapSize*mapSize && !(i == mapSize/2 && j == mapSize/2)) {
+//          Serial.println("Changing Node Cost");
+          node[i][j].cost = tempCost + 1;
+          check = true;
+        }
+      }
+    }
+  }
+  Serial.println("Exiting updateCosts()");
 }
 
 void getNextDirection() {
